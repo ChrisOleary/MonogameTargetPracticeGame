@@ -1,81 +1,143 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace Monogame
 {
-    /// <summary>
-    /// This is the main type for your game.
-    /// </summary>
+    
     public class Game1 : Game
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
+        //sprite variables
+        Texture2D target_Sprite;
+        Texture2D crosshairs_Spite;
+        Texture2D background_Spite;
+        //font variable
+        SpriteFont gameFont;
+
+
+        Vector2 targetPosition = new Vector2(300,300);
+        const int TARGET_RADIUS = 45;
+
+        //variable to allow mouse to be used
+        MouseState mState;
+        bool mReleased = true;
+        float mouseTargetDistance;
+
+        int score;
+        float timer = 10f;
+
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+
+            //show mouse when app is running
+            IsMouseVisible = false;
+
+            
+
         }
 
-        /// <summary>
-        /// Allows the game to perform any initialization it needs to before starting to run.
-        /// This is where it can query for any required services and load any non-graphic
-        /// related content.  Calling base.Initialize will enumerate through any components
-        /// and initialize them as well.
-        /// </summary>
+        
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
+          
             base.Initialize();
         }
 
-        /// <summary>
-        /// LoadContent will be called once per game and is the place to load
-        /// all of your content.
-        /// </summary>
+       
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch, which can be used to draw textures.
+          
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
-        }
+            target_Sprite = Content.Load<Texture2D>("target");
+            crosshairs_Spite = Content.Load<Texture2D>("crosshairs");
+            background_Spite = Content.Load<Texture2D>("sky");
 
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// game-specific content.
-        /// </summary>
+            gameFont = Content.Load<SpriteFont>("galleryFont");
+
+           }
+
+      
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
-        }
+            }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+       
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            if (timer > 0)
+            {
+                // timer is going to decrease by the total gametime
+                timer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
+            // get state of the mouse and anytime
+            mState = Mouse.GetState();
+
+            // calculate distance between mouse and target
+            mouseTargetDistance = Vector2.Distance(targetPosition, new Vector2(mState.X, mState.Y)); 
+
+            // everytime left button is clicked, increase score variable by 1
+            if (mState.LeftButton == ButtonState.Pressed && mReleased)
+            {
+                if (mouseTargetDistance < TARGET_RADIUS && timer > 0)
+                {
+                    score++;
+
+                    // move target to random position
+                    Random rand = new Random();
+                    targetPosition.X = rand.Next(TARGET_RADIUS,graphics.PreferredBackBufferWidth - TARGET_RADIUS + 1);
+                    targetPosition.Y = rand.Next(TARGET_RADIUS, graphics.PreferredBackBufferHeight - TARGET_RADIUS + 1);
+                }
+                mReleased = false;
+            }
+
+            if (mState.LeftButton == ButtonState.Released)
+            {
+                mReleased = true;
+            }
 
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+     
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            // start game
+            spriteBatch.Begin();
+
+            //background
+            spriteBatch.Draw(background_Spite, new Vector2(0,0), Color.White);
+
+            // show score
+            spriteBatch.DrawString(gameFont, "Score = " + score.ToString(), new Vector2(3, 3), Color.White);
+
+            // hide target when game ends
+            if (timer > 0)
+            {
+                //target - offset by TARGET_RADIUS to centre the sprite hitbox
+                spriteBatch.Draw(target_Sprite, new Vector2(targetPosition.X - TARGET_RADIUS, targetPosition.Y - TARGET_RADIUS), Color.White);
+            }
+            //show timer
+            spriteBatch.DrawString(gameFont, "Time left: " + Math.Ceiling(timer).ToString(), new Vector2(3, 40), Color.White);
+
+            spriteBatch.Draw(crosshairs_Spite, new Vector2(mState.X - 25, mState.Y - 25), Color.White);
+
+
+            // End game
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
